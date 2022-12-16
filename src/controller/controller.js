@@ -4,6 +4,7 @@ const userModel = require('../models/UserModel')
 const userProfileModel = require('../models/UserProfileModel')
 const adminModel = require('../models/adminModel')
 const foodModel = require('../models/foodModel')
+const orderModel = require('../models/userOrderFoodModel.js')
 const {uploadFile}= require('../util/aws_sdk')
 
 
@@ -372,3 +373,91 @@ const getAllTheFoodItems = async function (req, res) {
         return res.status(500).send({ status: false, error: err.message });
     }
 }
+
+const userPlaceOrder = async function (req, res) {
+
+    try {
+
+        let userId = req.params.userId
+        let order = req.body
+
+        if (!foodData || foodData.length === 0) {
+            return res.status(401).send({ status: false, message: `There No Item to Place the order` });
+        }
+        let findUser = await userModel.findById(userId)
+        if (!findUser) {
+            return res.status(404).send({ status: false, message: "admin not found" })
+        }
+        let totalprice 
+        for(let i = 0;i < order.length;i++){
+            let item = await orderModel.fineOne({Item : order[i].Item})
+            if(!item || item.length==0) return res.status(401).send({ status: false, message: `${order[i].Item} doesn't exist`});
+            totalprice = order[i].quantity * order[i].price
+        }
+
+        let user = {
+            user : userId,
+            Orders : order,
+            totalprice : totalprice
+        }
+
+        let data = await orderModel.create(user)
+        return res.status(200).send({ status: true, message : "Order Placed Sucessfully",data : user});
+
+    } catch (err) {
+        return res.status(500).send({ status: false, error: err.message });
+    }
+}
+
+
+const getuserDetailsbyAdmin = async function (req, res) {
+
+    try {
+
+        let adminIdFromToken = req.adminId
+        const findAdminData = await adminModel.findById(adminIdFromToken)
+        if (!findAdminData) {
+            return res.status(404).send({ status: false, message: "admin not found" })
+        }
+        if (findAdminData._id.toString() != adminIdFromToken) {
+            return res.status(403).send({ status: false, message: "You Are Not Authorized!!" })
+        }
+        let Data = await userModel.find()
+
+        if (!Data || Data.length === 0) {
+            return res.status(401).send({ status: false, message: `No Item Is Present` });
+        }
+
+        return res.status(200).send({ status: true, data : Data});
+
+    } catch (err) {
+        return res.status(500).send({ status: false, error: err.message });
+    }
+}
+
+const getorderDetailsbyAdmin = async function (req, res) {
+
+    try {
+
+        let adminIdFromToken = req.adminId
+        const findAdminData = await adminModel.findById(adminIdFromToken)
+        if (!findAdminData) {
+            return res.status(404).send({ status: false, message: "admin not found" })
+        }
+        if (findAdminData._id.toString() != adminIdFromToken) {
+            return res.status(403).send({ status: false, message: "You Are Not Authorized!!" })
+        }
+        let Data = await orderModel.find()
+
+        if (!Data || Data.length === 0) {
+            return res.status(401).send({ status: false, message: `No Item Is Present` });
+        }
+
+        return res.status(200).send({ status: true, data : Data});
+
+    } catch (err) {
+        return res.status(500).send({ status: false, error: err.message });
+    }
+}
+
+module.exports={userSignup,adminSignup,userlogin,adminlogin,createFoodItems,updateFoodItems,deleteFoodItems,getAllTheFoodItems,userPlaceOrder,getuserDetailsbyAdmin,getorderDetailsbyAdmin}
