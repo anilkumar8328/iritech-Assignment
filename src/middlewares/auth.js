@@ -31,7 +31,7 @@ const adminauthentication = async function(req, res, next){
         if (!decodeToken) {
         return res.status(401).send({ status: false, message: `Invalid Token` })}
         req.adminId = decodeToken.adminId
-
+        console.log(decodeToken);
         next()
     } catch (err) {
         res.status(500).send({ status: false, message: err.message })

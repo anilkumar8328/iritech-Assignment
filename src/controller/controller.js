@@ -5,6 +5,7 @@ const userProfileModel = require('../models/UserProfileModel')
 const adminModel = require('../models/adminModel')
 const foodModel = require('../models/foodModel')
 const orderModel = require('../models/userOrderFoodModel.js')
+const validator=require('../util/validations')
 const {uploadFile}= require('../util/aws_sdk')
 
 
@@ -52,7 +53,7 @@ const userSignup = async function (req, res) {
         const saveUserInDb = await userModel.create(userDetails);
         await userProfileModel.create({ user: saveUserInDb._id })
 
-        return res.status(201).send({ status: true, message: "User Profile successfully!!", data: saveUserInDb });
+        return res.status(201).send({ status: true, message: "User Profile Created successfully!!", data: saveUserInDb });
 
     } catch (err) {
 
@@ -175,6 +176,8 @@ const adminlogin = async function (req, res) {
             return res.status(400).send({ status: false, message: 'Password is required' })
         }
         const adminData = await adminModel.findOne({ email });
+        console.log(adminData);
+        console.log(password);
 
         if (!adminData) {
             return res.status(401).send({ status: false, message: `Login failed!! Email-Id is incorrect!` });
@@ -185,7 +188,7 @@ const adminlogin = async function (req, res) {
         if (!checkPassword) return res.status(401).send({ status: false, message: `Login failed!! password is incorrect.` });
         let adminId=adminData._id
         const token = jwt.sign({
-            admin: adminId,
+            adminId: adminId,
             iat: Math.floor(Date.now() / 1000),
             exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60
         }, "IRITECH-ADMIN-JWT")
@@ -205,8 +208,8 @@ const createFoodItems = async function (req, res) {
         let files = req.files
         const foodDetails = req.body;
         let adminIdFromToken = req.adminId
-
-        const findAdminData = await userModel.findById(adminIdFromToken)
+        console.log(adminIdFromToken);
+        const findAdminData = await adminModel.findById(adminIdFromToken)
         if (!findAdminData) {
             return res.status(404).send({ status: false, message: "admin not found" })
         }
@@ -214,7 +217,7 @@ const createFoodItems = async function (req, res) {
             return res.status(403).send({ status: false, message: "You Are Not Authorized!!" })
         }
 
-        const { Item, price, quantity } = foodDetails;
+        const { Item, price } = foodDetails;
 
         if (!validator.isValidRequestBody(foodDetails)) {
             return res.status(400).send({ status: false, message: 'Please provide Item details' })
@@ -224,9 +227,6 @@ const createFoodItems = async function (req, res) {
         }
         if (!validator.isValid(price)) {
             return res.status(400).send({ status: false, message: 'price is required' })
-        }
-        if (!validator.isValid(quantity)) {
-            return res.status(400).send({ status: false, message: 'Quantity is required' })
         }
 
         if (!files.length) {
@@ -287,17 +287,12 @@ const updateFoodItems = async function (req, res) {
         if(!price || price.length==0) updatePrice = fooDate.price
         else updatePrice=price
 
-        let updateQuantiy 
-        if(!quantity || quantity.length==0) updateQuantiy = foodData.quantity
-        else updateQuantiy = quantity
-
         let updatedImage
         if (files&&files.length) updatedImage = await uploadFile(files[0])
         else updatedImage = foodData.ItemImage
 
         let updateFoodDetails = {
             price : updatePrice,
-            quantity:updateQuantiy,
             ItemImage:updatedImage,
             delete:false
         }
@@ -379,7 +374,9 @@ const userPlaceOrder = async function (req, res) {
     try {
 
         let userId = req.params.userId
-        let order = req.body
+        let foodData = req.body.order
+        
+        console.log(foodData);
 
         if (!foodData || foodData.length === 0) {
             return res.status(401).send({ status: false, message: `There No Item to Place the order` });
@@ -389,15 +386,15 @@ const userPlaceOrder = async function (req, res) {
             return res.status(404).send({ status: false, message: "admin not found" })
         }
         let totalprice 
-        for(let i = 0;i < order.length;i++){
-            let item = await orderModel.fineOne({Item : order[i].Item})
-            if(!item || item.length==0) return res.status(401).send({ status: false, message: `${order[i].Item} doesn't exist`});
-            totalprice = order[i].quantity * order[i].price
+        for(let i = 0;i < foodData.length;i++){
+            let item = await foodModel.findOne({Item : foodData[i].Item})
+            if(!item || item.length==0) return res.status(401).send({ status: false, message: `${foodData[i].Item} doesn't exist`});
+            totalprice = foodData[i].quantity * foodData[i].price
         }
 
         let user = {
             user : userId,
-            Orders : order,
+            Orders : foodData,
             totalprice : totalprice
         }
 
@@ -422,7 +419,7 @@ const getuserDetailsbyAdmin = async function (req, res) {
         if (findAdminData._id.toString() != adminIdFromToken) {
             return res.status(403).send({ status: false, message: "You Are Not Authorized!!" })
         }
-        let Data = await userModel.find()
+        let Data = await userModel.find().populate()
 
         if (!Data || Data.length === 0) {
             return res.status(401).send({ status: false, message: `No Item Is Present` });

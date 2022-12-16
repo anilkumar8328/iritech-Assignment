@@ -12,25 +12,25 @@ router.post('/userSignUp',userSignup)
 router.post('/adminSignUp',adminSignup)
 
 //user Login
-router.get('/userLogin',userlogin)
+router.post('/userLogin',userlogin)
 
 //admin Login
-router.get('/adminLogin',adminlogin)
+router.post('/adminLogin',adminlogin)
 
 //Adim Create Food Items
-router.get('/createItems', adminauthentication, createFoodItems)
+router.post('/createItems', adminauthentication, createFoodItems)
 
 //update food Items
-router.get('/updateItems?:ItemId', adminauthentication, updateFoodItems)
+router.post('/updateItems/:ItemId', adminauthentication, updateFoodItems)
 
 //delete food Items
-router.get('/deleteItems', adminauthentication, deleteFoodItems)
+router.post('/deleteItems', adminauthentication, deleteFoodItems)
 
 //public api to get all food items
 router.get('/getAllItems',getAllTheFoodItems)
 
 //user place order
-router.get('/userPlaceOrder/:userId', userauthentication, userPlaceOrder)
+router.post('/userPlaceOrder/:userId', userauthentication, userPlaceOrder)
 
 //get user details by admin only
 router.get('/getUserDetails', adminauthentication, getuserDetailsbyAdmin)

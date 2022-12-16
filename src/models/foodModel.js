@@ -12,10 +12,6 @@ const foodSchema = new mongoose.Schema({
         required :true,
         trim:true
     },
-    quantity : {
-        type:Number,
-        required:true
-    },
     delete : {
         type :Boolean,
         reuired:true
